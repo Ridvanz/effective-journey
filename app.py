@@ -86,7 +86,7 @@ app.layout = html.Div([
         html.H4('ML model predictions'),
         html.Div(id='predictions', style={'display': 'inline-block', "width": "90%", "align-items": "center", "justify-content": "center", 
                                                 'textAlign': 'center', 'margin-bottom': 50,
-                                                'color': colors['background']}, ),
+                                                'color': colors['background']}, children="Select a waterpump on the map"),
         html.H2(),   
         html.H4('SHAP values for prediction explanation'),
         html.Div(children=[  
@@ -130,7 +130,7 @@ def make_prediction(click):
         data = pd.DataFrame(original).T.to_dict('records')
         columns=[{"name": i, "id": i} for i in original_df.columns]
 
-        return label, selected, data, columns, f"Probabilities: \t Functional: {round(prediction[0][0]*100,1)} %, \t Needs repair: {round(prediction[0][1]*100,1)} %, \t Non-functional: {round(prediction[0][2]*100,1)} %,%"
+        return label, selected, data, columns, f"Predicted probabilities: \t Functional: {round(prediction[0][0]*100,1)}%, \t Needs repair: {round(prediction[0][1]*100,1)}%, \t Non-functional: {round(prediction[0][2]*100,1)}%"
 
         # return force_plot_html(explainer.expected_value[label], shap_values[label]), 'You have selected "{}"'.format(original)
         
