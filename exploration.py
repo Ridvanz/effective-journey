@@ -187,7 +187,8 @@ forest = RandomForestClassifier(random_state=0, n_estimators=300, max_depth=8, n
 scores = cross_val_score(forest, X_base, y_train.values.ravel(), cv=5)
 print("%0.5f accuracy with a standard deviation of %0.3f" % (scores.mean(), scores.std()))
 
-
+plt.figure()
+plt.plot(1,2)
 #%% Calculate and plot feature importances (MDI)
 
 start_time = time.time()
@@ -240,7 +241,6 @@ y_test_gbm = y_test.status_group.astype('category').cat.codes
 # so we do not have to manually suggest hyperparameter settings.
 
 dtrain = lgb.Dataset(X_train_gbm, label=y_train_gbm, categorical_feature=X_train_cat_gbm.columns.tolist())
-dtrain = lgb.Dataset(X_train_gbm, label=(y_train_gbm==1).astype(int), categorical_feature=X_train_cat_gbm.columns.tolist())
 
 params = {
     "boosting_type": "gbdt",
@@ -251,25 +251,6 @@ params = {
     "verbosity": -1,
 }
 
-# params = {
-#     "boosting_type": "gbdt",
-#     "objective": "binary",
-#     "metric": ["binary_logloss"],
-#     "is_unbalance": "true",
-#     "verbosity": -1,
-# }
-
-# params = {
-#     "boosting_type": "gbdt",
-#     "objective": "regression",
-#     "metric": "l2",
-#     "verbosity": -1,
-# }
-
-
-# tuner = optuna_lgb.LightGBMTunerCV(
-#     params, dtrain, verbose_eval=0, early_stopping_rounds=20, folds=StratifiedKFold(n_splits=3, shuffle=True), return_cvbooster=True,time_budget=300
-#     )
 tuner = optuna_lgb.LightGBMTunerCV(
     params, dtrain, verbose_eval=0, early_stopping_rounds=20, nfold = 3, stratified =True, return_cvbooster=True, time_budget=300
     )
@@ -282,7 +263,7 @@ best_params = tuner.best_params
 print("Best params:", best_params)
 print("  Params: ")
 for key, value in best_params.items():
-    print("    {}: {}".format(key, value))
+    print("{}: {}".format(key, value))
 #%% Analyze tuning history
 
 slice_fig = optuna.visualization.plot_slice(tuner.study)
@@ -328,8 +309,7 @@ with open('data/plotly_df.pkl', 'wb') as f:
     pickle.dump(X_plotly, f)
 with open('data/original_df.pkl', 'wb') as f:
     pickle.dump(original_df.loc[X_plotly.index], f)       
-#%%
-
+#%% Analyze our final model
 
 # plot builtin feature importance
 optuna_lgb.plot_importance(gbm)
@@ -341,41 +321,13 @@ shap_values = explainer.shap_values(X_train_gbm)
 shap.summary_plot(shap_values, X_train_gbm)
 shap.plots.waterfall(explainer.shap_values(X_train_gbm))
 
+# Save the explainer to use in the dashboard
 with open('models/shap_explainer.pkl', 'wb') as f:
     pickle.dump(explainer, f)    
 
-shap.initjs()
-plot = shap.force_plot(explainer.expected_value[1], shap_values[1], data_for_prediction, matplotlib=False)
-shap.save_html("index.htm" , plot)
 
 shap.plots.beeswarm(shap_values)
 
 
  
 #%%
-stophier
-filename = "/models/lgb_classifier"
-pickle.dump(gbm, open(filename, 'wb'))
-loaded_model = pickle.load(open(filename, 'rb'))
-
-
-    
-with open('models/lgb_classifier.pkl', 'rb') as f:
-    testgbm = pickle.load(f)    
-    
-clf = lgb.LGBMClassifier(max_depth=10)
-clf.fit(X_train_gbm, y_train.status_group.astype('category').cat.codes)
-
-scores = cross_val_score(clf, X_train_gbm, y_train.values.ravel(), cv=5)
-print("%0.3f accuracy with a standard deviation of %0.5f" % (scores.mean(), scores.std()))
-
-lgb.plot_importance(clf)
-
-shap_values = shap.TreeExplainer(clf).shap_values(X_train_gbm)
-shap.summary_plot(shap_values, X_train_gbm)
-
-shap.initjs()
-plot = shap.force_plot(explainer.expected_value[1], shap_values[1], data_for_prediction, matplotlib=False)
-shap.save_html("index.htm" , plot)
-shap.plots.beeswarm(shap_values)
-
